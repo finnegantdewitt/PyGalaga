@@ -15,17 +15,24 @@ def load_image(name):
     try:
         image = pygame.image.load(name)
     except pygame.error:
-        print('Cannot load image: ', name)
-        raise SystemExit(str("error"))
+        raise SystemExit('Could not load image "%s" %s'%(name, pygame.get_error()))
     image = pygame.transform.rotozoom(image, 0, 3)
     image = image.convert_alpha()
-    return image, image.get_rect()
+    return image
+
+def load_images(*names):
+    images = []
+    for name in names:
+        images.append(load_image(name))
+    return images
 
 class Ship(pygame.sprite.Sprite):
+    images = []
     speed = 5
     def __init__(self):
         pygame.sprite.Sprite.__init__(self, self.containers)
-        self.image, self.rect = load_image("sprites/Ship_White.png")
+        self.image = self.images[0]
+        self.rect = self.image.get_rect()
         self.rect.center = (WIDTH/2, HEIGHT-(self.rect.height/1.25))
         self.rect.inflate(30, 30)
         self.reloading = 0
@@ -43,19 +50,23 @@ class Ship(pygame.sprite.Sprite):
         return pos, self.rect.top
 
 class Rocket(pygame.sprite.Sprite):
+    images = []
     def __init__(self, pos):
         pygame.sprite.Sprite.__init__(self, self.containers)
-        self.image, self.rect = load_image("sprites/rocket_0001.png")
+        self.image = self.images[0]
+        self.rect = self.image.get_rect()
         self.rect.midbottom = pos
 
     def update(self):
         self.rect.move_ip([0, -10])
 
 class Alien(pygame.sprite.Sprite):
+    images = []
     speed = 7
     def __init__(self):
         pygame.sprite.Sprite.__init__(self, self.containers)
-        self.image, self.rect = load_image("sprites/Fly_0001.png")
+        self.image = self.images[0]
+        self.rect = self.image.get_rect()
         self.rect.right = WIDTH
         self.facing = -1 * Alien.speed
 
@@ -67,15 +78,9 @@ class Alien(pygame.sprite.Sprite):
             self.rect = self.rect.clamp(SCREENRECT)
 
 class Explosion(pygame.sprite.Sprite):
+    images = []
     def __init__(self, actor):
         pygame.sprite.Sprite.__init__(self, self.containers)
-        explosion_uris = [ "sprites/enemy_explosion_0001.png", "sprites/enemy_explosion_0002.png", "sprites/enemy_explosion_0003.png", "sprites/enemy_explosion_0004.png" ]
-        self.images = []
-        for img in explosion_uris:
-                img = pygame.image.load(img)
-                img = pygame.transform.rotozoom(img, 0, 3)
-                img = img.convert_alpha()
-                self.images.append(img)
         self.image = self.images[0]
         self.rect = self.image.get_rect(center=actor.rect.center)
         self.img_idx = 0
@@ -89,7 +94,6 @@ class Explosion(pygame.sprite.Sprite):
             self.image = self.images[self.img_idx]
         
 
-#todo: load images before class init
 def main():
     pygame.init()
 
@@ -101,6 +105,12 @@ def main():
     background = pygame.Surface(SIZE)
     background = background.convert()
     background.fill(BLACK)
+
+    #load images
+    Ship.images = [load_image("sprites/Ship_White.png")]
+    Rocket.images = [load_image("sprites/rocket_0001.png")]
+    Alien.images = [load_image("sprites/Fly_0001.png")]
+    Explosion.images = load_images("sprites/enemy_explosion_0001.png", "sprites/enemy_explosion_0002.png", "sprites/enemy_explosion_0003.png", "sprites/enemy_explosion_0004.png")
 
     # initialize game groups
     rockets = pygame.sprite.Group()
