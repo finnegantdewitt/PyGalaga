@@ -18,7 +18,7 @@ def load_image(name):
         print('Cannot load image: ', name)
         raise SystemExit(str("error"))
     image = pygame.transform.rotozoom(image, 0, 3)
-    image = image.convert()
+    image = image.convert_alpha()
     return image, image.get_rect()
 
 class Ship(pygame.sprite.Sprite):
@@ -66,7 +66,30 @@ class Alien(pygame.sprite.Sprite):
             self.rect.top = self.rect.bottom + 1
             self.rect = self.rect.clamp(SCREENRECT)
 
+class Explosion(pygame.sprite.Sprite):
+    def __init__(self, actor):
+        pygame.sprite.Sprite.__init__(self, self.containers)
+        explosion_uris = [ "sprites/enemy_explosion_0001.png", "sprites/enemy_explosion_0002.png", "sprites/enemy_explosion_0003.png", "sprites/enemy_explosion_0004.png" ]
+        self.images = []
+        for img in explosion_uris:
+                img = pygame.image.load(img)
+                img = pygame.transform.rotozoom(img, 0, 3)
+                img = img.convert_alpha()
+                self.images.append(img)
+        self.image = self.images[0]
+        self.rect = self.image.get_rect(center=actor.rect.center)
+        self.img_idx = 0
+        self.img_tot = 4
 
+    def update(self):
+        self.img_idx += 1
+        if(self.img_idx >= self.img_tot):
+            self.kill()
+        else:
+            self.image = self.images[self.img_idx]
+        
+
+#todo: load images before class init
 def main():
     pygame.init()
 
@@ -88,6 +111,7 @@ def main():
     Ship.containers = all
     Rocket.containers = rockets, all
     Alien.containers = aliens, all
+    Explosion.containers = all
 
     # create some starting values
     clock = pygame.time.Clock()
@@ -120,7 +144,7 @@ def main():
             Rocket(ship.gunpos())
         ship.reloading = firing
 
-        # Create new aliends
+        # Create new aliens
         if(alienreload):
             alienreload -= 1
         else:
@@ -129,13 +153,12 @@ def main():
             
         # Detect collisions
         for alien in pygame.sprite.groupcollide(rockets, aliens, 1, 1):
-            print("explosion")
+            Explosion(alien)
 
 
         #draw the scene
         dirty = all.draw(screen)
-        # update the display looks better than pygame.display.update()
-        pygame.display.flip()
+        pygame.display.update()
         clock.tick(60)
 
 if __name__ == "__main__":
